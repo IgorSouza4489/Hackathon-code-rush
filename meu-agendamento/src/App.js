@@ -28,21 +28,21 @@ function App() {
 
     if (!bookedDates.includes(selectedDate)) {
       setSuggestedDate(selectedDate);
-      setMessage("Data disponível! Agendamento confirmado.");
+      setMessage("✅ Data disponível! Agendamento confirmado.");
     } else {
       const bestDate = findBestDate(selectedDate);
       if (bestDate) {
         setSuggestedDate(bestDate);
-        setMessage(`A data escolhida está ocupada. Melhor data disponível: ${bestDate}`);
+        setMessage(`⚠️ A data escolhida está ocupada. Melhor data disponível: ${bestDate}`);
       } else {
-        setMessage("Não há datas disponíveis nos próximos 30 dias.");
+        setMessage("❌ Não há datas disponíveis nos próximos 30 dias.");
       }
     }
   };
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>Agendamento Inteligente</h1>
+      <h1 style={styles.title}>⚡ Agendamento Inteligente</h1>
       <form onSubmit={handleSubmit} style={styles.form}>
         <label style={styles.label}>Escolha sua data preferida:</label>
         <input
@@ -51,21 +51,23 @@ function App() {
           onChange={(e) => setSelectedDate(e.target.value)}
           style={styles.input}
         />
-        <button type="submit" style={styles.button}>Verificar Disponibilidade</button>
+        <button type="submit" style={styles.button}>
+          Verificar Disponibilidade
+        </button>
       </form>
 
       {message && (
         <div style={styles.result}>
           <p>{message}</p>
-          {suggestedDate && <strong>Data sugerida: {suggestedDate}</strong>}
+          {suggestedDate && <strong>📅 Data sugerida: {suggestedDate}</strong>}
         </div>
       )}
 
       <div style={styles.bookedDates}>
-        <h3>Datas já ocupadas (simuladas):</h3>
+        <h3 style={styles.subtitle}>Datas já ocupadas (simuladas):</h3>
         <ul>
           {bookedDates.map((date) => (
-            <li key={date}>{date}</li>
+            <li key={date} style={styles.listItem}>{date}</li>
           ))}
         </ul>
       </div>
@@ -75,17 +77,26 @@ function App() {
 
 const styles = {
   container: {
-    fontFamily: "Arial, sans-serif",
-    maxWidth: "500px",
+    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+    maxWidth: "600px",
     margin: "50px auto",
-    padding: "20px",
-    borderRadius: "8px",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-    backgroundColor: "#f9f9f9",
+    padding: "25px",
+    borderRadius: "16px",
+    background: "linear-gradient(145deg, #1e1e2f, #2a2a40)",
+    boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+    color: "#f0f0f0",
     textAlign: "center",
   },
   title: {
-    color: "#333",
+    fontSize: "28px",
+    fontWeight: "bold",
+    background: "linear-gradient(90deg, #00e5ff, #7c4dff)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    marginBottom: "20px",
+  },
+  subtitle: {
+    color: "#00e5ff",
   },
   form: {
     marginTop: "20px",
@@ -95,31 +106,47 @@ const styles = {
     alignItems: "center",
   },
   label: {
-    fontWeight: "bold",
+    fontWeight: "600",
+    fontSize: "16px",
   },
   input: {
     padding: "10px",
-    borderRadius: "4px",
-    border: "1px solid #ccc",
-    width: "60%",
+    borderRadius: "8px",
+    border: "1px solid #555",
+    backgroundColor: "#1e1e2f",
+    color: "#f0f0f0",
+    width: "70%",
+    textAlign: "center",
+    outline: "none",
+    transition: "0.3s",
   },
   button: {
-    padding: "10px 20px",
-    borderRadius: "4px",
+    padding: "12px 25px",
+    borderRadius: "8px",
     border: "none",
-    backgroundColor: "#4CAF50",
+    background: "linear-gradient(90deg, #00e5ff, #7c4dff)",
     color: "white",
+    fontWeight: "bold",
     cursor: "pointer",
+    transition: "0.3s",
   },
   result: {
-    marginTop: "20px",
-    padding: "10px",
-    borderRadius: "4px",
-    backgroundColor: "#e0f7fa",
+    marginTop: "25px",
+    padding: "15px",
+    borderRadius: "8px",
+    backgroundColor: "#2d2d44",
+    border: "1px solid #444",
   },
   bookedDates: {
     marginTop: "30px",
     textAlign: "left",
+    backgroundColor: "#1e1e2f",
+    padding: "15px",
+    borderRadius: "8px",
+  },
+  listItem: {
+    margin: "5px 0",
+    color: "#ccc",
   },
 };
 
