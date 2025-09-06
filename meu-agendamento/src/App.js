@@ -1,50 +1,124 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-const bookedDates = ["2025-09-05", "2025-09-06", "2025-09-08"];
+const initialAppointments = {
+  "2025-09-05": "Ana",
+  "2025-09-06": "Bruno",
+  "2025-09-08": "Carlos",
+};
 
 function App() {
   const [selectedDate, setSelectedDate] = useState("");
   const [suggestedDate, setSuggestedDate] = useState(null);
   const [message, setMessage] = useState("");
+  const [appointments, setAppointments] = useState(() => {
+    const saved = localStorage.getItem("appointments");
+    return saved ? JSON.parse(saved) : initialAppointments;
+  });
+  const [showModal, setShowModal] = useState(false);
+  const [pendingDate, setPendingDate] = useState(null);
+  const [currentUser, setCurrentUser] = useState("");
 
-  const findBestDate = (date) => {
-    let newDate = new Date(date);
-    for (let i = 0; i < 30; i++) {
-      const formattedDate = newDate.toISOString().split("T")[0];
-      if (!bookedDates.includes(formattedDate)) {
-        return formattedDate;
+  useEffect(() => {
+    let user = localStorage.getItem("currentUser");
+    if (!user) {
+      user = prompt("Enter your name:");
+      localStorage.setItem("currentUser", user);
+    }
+    setCurrentUser(user);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("appointments", JSON.stringify(appointments));
+  }, [appointments]);
+
+  const bfsFindDate = (startDate) => {
+    const queue = [new Date(startDate)];
+    const visited = new Set();
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+      const formatted = current.toISOString().split("T")[0];
+
+      if (!appointments[formatted]) {
+        return formatted;
       }
-      newDate.setDate(newDate.getDate() + 1);
+
+      visited.add(formatted);
+
+      const next = new Date(current);
+      next.setDate(next.getDate() + 1);
+      if (!visited.has(next.toISOString().split("T")[0])) {
+        queue.push(next);
+      }
+
+      const prev = new Date(current);
+      prev.setDate(prev.getDate() - 1);
+      if (!visited.has(prev.toISOString().split("T")[0])) {
+        queue.push(prev);
+      }
     }
     return null;
+  };
+
+  const confirmAppointment = () => {
+    setAppointments((prev) => ({
+      ...prev,
+      [pendingDate]: currentUser,
+    }));
+    setMessage(`✅ ${currentUser}, your appointment is confirmed for ${pendingDate}`);
+    setShowModal(false);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!selectedDate) {
-      setMessage("Por favor, selecione uma data.");
+      setMessage("Please select a date.");
       return;
     }
 
-    if (!bookedDates.includes(selectedDate)) {
-      setSuggestedDate(selectedDate);
-      setMessage("✅ Data disponível! Agendamento confirmado.");
+    if (!appointments[selectedDate]) {
+      setPendingDate(selectedDate);
+      setShowModal(true);
     } else {
-      const bestDate = findBestDate(selectedDate);
+      const bestDate = bfsFindDate(selectedDate);
       if (bestDate) {
         setSuggestedDate(bestDate);
-        setMessage(`⚠️ A data escolhida está ocupada. Melhor data disponível: ${bestDate}`);
+        setMessage(
+          `⚠️ The selected date is already taken by ${appointments[selectedDate]}. Best available date: ${bestDate}`
+        );
       } else {
-        setMessage("❌ Não há datas disponíveis nos próximos 30 dias.");
+        setMessage("❌ No available dates.");
       }
     }
   };
 
+  const swapAppointments = (date1, date2) => {
+    if (!appointments[date1] || !appointments[date2]) {
+      setMessage("❌ Both dates must be booked to swap.");
+      return;
+    }
+
+    if (appointments[date1] !== currentUser && appointments[date2] !== currentUser) {
+      setMessage("❌ You can only swap if you are part of the swap.");
+      return;
+    }
+
+    const temp = appointments[date1];
+    setAppointments((prev) => ({
+      ...prev,
+      [date1]: prev[date2],
+      [date2]: temp,
+    }));
+    setMessage(`🔄 Swap done between ${appointments[date1]} and ${appointments[date2]}`);
+  };
+
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>⚡ Agendamento Inteligente</h1>
+      <h1 style={styles.title}>⚡ Smart Scheduling (BFS + Swap)</h1>
+      <p>👤 Current user: <strong>{currentUser}</strong></p>
+
       <form onSubmit={handleSubmit} style={styles.form}>
-        <label style={styles.label}>Escolha sua data preferida:</label>
+        <label style={styles.label}>Choose your preferred date:</label>
         <input
           type="date"
           value={selectedDate}
@@ -52,24 +126,56 @@ function App() {
           style={styles.input}
         />
         <button type="submit" style={styles.button}>
-          Verificar Disponibilidade
+          Check Availability
         </button>
       </form>
 
       {message && (
         <div style={styles.result}>
           <p>{message}</p>
-          {suggestedDate && <strong>📅 Data sugerida: {suggestedDate}</strong>}
+          {suggestedDate && <strong>📅 Suggested date: {suggestedDate}</strong>}
+        </div>
+      )}
+
+      {showModal && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modal}>
+            <h3>Confirm Appointment</h3>
+            <p>{currentUser}, do you want to confirm {pendingDate}?</p>
+            <div style={{ marginTop: "15px" }}>
+              <button style={styles.button} onClick={confirmAppointment}>
+                Confirm
+              </button>
+              <button
+                style={{ ...styles.button, background: "gray" }}
+                onClick={() => setShowModal(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
       <div style={styles.bookedDates}>
-        <h3 style={styles.subtitle}>Datas já ocupadas (simuladas):</h3>
+        <h3 style={styles.subtitle}>Current appointments:</h3>
         <ul>
-          {bookedDates.map((date) => (
-            <li key={date} style={styles.listItem}>{date}</li>
+          {Object.entries(appointments).map(([date, person]) => (
+            <li key={date} style={styles.listItem}>
+              {date} → {person}
+            </li>
           ))}
         </ul>
+      </div>
+
+      <div style={styles.swapBox}>
+        <h3 style={styles.subtitle}>Simulate swap:</h3>
+        <button
+          style={styles.button}
+          onClick={() => swapAppointments("2025-09-05", "2025-09-06")}
+        >
+          Try swap (05/09) ↔ (06/09)
+        </button>
       </div>
     </div>
   );
@@ -129,6 +235,7 @@ const styles = {
     fontWeight: "bold",
     cursor: "pointer",
     transition: "0.3s",
+    margin: "5px",
   },
   result: {
     marginTop: "25px",
@@ -147,6 +254,31 @@ const styles = {
   listItem: {
     margin: "5px 0",
     color: "#ccc",
+  },
+  modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: "rgba(0,0,0,0.6)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modal: {
+    background: "#2d2d44",
+    padding: "20px",
+    borderRadius: "12px",
+    textAlign: "center",
+    maxWidth: "400px",
+    width: "100%",
+  },
+  swapBox: {
+    marginTop: "20px",
+    padding: "15px",
+    background: "#222",
+    borderRadius: "8px",
   },
 };
 
